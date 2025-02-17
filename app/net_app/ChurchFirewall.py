@@ -1,17 +1,13 @@
-from panos import network
-from panos import firewall
-from panos import policies
-from panos import ha
+from panos import network, firewall, policies, ha, updater, device
 import xmltodict
 from pprint import pprint
-import os
+import subprocess, os, time
 import requests
 
 
 
 
 class ChurchFirewall:
-
     zones = ['zone_to-pa-hub', 'zone-to-hub', 'zone-to-branch', 'zone-internet', 'zone-internal', 'noc_transit_router',
              'noc_infrastructure_mgmt',
              'corp_wireless_mgmt', 'corp_casino_operations', 'corp_client_audiovisual', 'corp_client_general',
@@ -21,8 +17,8 @@ class ChurchFirewall:
              ]
 
     def __init__(self, firewall_ip):
-        self.api_user = os.getenv("API_USER")
-        self.api_password = os.getenv("API_PASSWORD")
+        self.api_user = "admin"
+        self.api_password = "HBC_Derby"
         self.fw_host = firewall_ip
         self.fw_conn = firewall.Firewall(hostname=self.fw_host, api_username=self.api_user,
                                          api_password=self.api_password)
@@ -31,7 +27,7 @@ class ChurchFirewall:
             f'https://{firewall_ip}/api/?type=keygen&user={self.api_user}&password={self.api_password}',
             verify=False).text
         self.fw_token_dict = xmltodict.parse(self.fw_token_response)
-        self.fw_token = self.fw_token_dict['response']['result']['key']
+        # self.fw_token = self.fw_token_dict['response']['result']['key']
 
     def initial_clean(self):
         vwire = network.VirtualWire(name="default-vwire")
@@ -57,9 +53,10 @@ class ChurchFirewall:
         int_1.delete()
         int_2.delete()
 
-        vr = network.VirtualRouter(name="default_lab")
+        vr = network.VirtualRouter(name="default")
         self.fw_conn.add(vr)
         vr.delete()
+        self.fw_conn.commit()
 
     def ha_setup(self):
         ha_conf = ha.HighAvailability(enabled=True, group_id=10, state_sync=True, passive_link_state='auto',
@@ -80,9 +77,31 @@ class ChurchFirewall:
         ha_conf.create()
         self.fw_conn.commit()
 
+    def ping_fw(self):
+
+        p_result = subprocess.run(['ping', '-c', '3', '-n', '192.168.1.11'], stdout=subprocess.PIPE, encoding='utf-8')
+        loss = p_result.stdout.split('\n')[6]
+        if '0% packet loss' in loss:
+            print(loss)
+
+    def set_mgmt(self):
+        dev = device.SystemSettings(hostname='usMJT-fw01', ip_address='192.168.1.11', netmask='255.255.255.0',
+                                    default_gateway='192.168.1.254',
+                                    dns_primary='8.8.8.8', dns_secondary='8.8.8.1')
+        self.fw_conn.add(dev)
+        dev.create()
+        self.fw_conn.commit()
+
     def disable_ztp(self):
         command = "set system ztp disable"
         self.fw_conn.op(cmd=command, xml=True)
+
+        while True:
+            time.sleep(60)
+            if self.ping_fw() == False:
+                break
+
+        return "Firewall back online"
 
     def download_updates(self):
 
@@ -134,7 +153,7 @@ class ChurchFirewall:
 
     def enable_sdwan(self):
         sdwan_int = self.fw_conn.op(
-            cmd='set network interface ethernet ethernet1/1 layer3 units ethernet1/1.1851 tag 1851', xml=True)
+            cmd='set network interface ethernet ethernet1/3 layer3 units ethernet1/1.1851 tag 1851', xml=True)
         dict_int = xmltodict.parse(sdwan_int)
         print(dict_int)
 
@@ -155,7 +174,7 @@ class ChurchFirewall:
         self.fw_conn.add(add_zone)
         add_zone.create()
 
-    def init_net(self, wan_ip):
+    def init_net(self):
         vr = network.VirtualRouter(name='sdwan')
         self.fw_conn.add(vr)
         vr.create()
@@ -173,9 +192,53 @@ class ChurchFirewall:
         self.fw_conn.add(phys_int)
         phys_int.create()
 
-        wan_sub_int = network.Layer3Subinterface('ethernet1/1.1851', tag=1851, ip=(wan_ip,))
+        wan_phy_int = network.EthernetInterface(name='ethernet1/3', mode='layer3', lldp_enabled=True, enable_dhcp=True)
+        self.fw_conn.add(wan_phy_int)
+        wan_phy_int.create()
+
+        wan_sub_int = network.Layer3Subinterface('ethernet1/3.1851', tag=1851, ip=('6.6.5.1/29',))
         self.fw_conn.add(wan_sub_int)
         wan_sub_int.create()
         wan_sub_int.set_zone('internet_public', update=True, running_config=True)
         wan_sub_int.set_virtual_router('sdwan', update=True, running_config=True)
+
         self.fw_conn.commit()
+
+    def os_update(self):
+        code = updater.SoftwareUpdater(self.fw_conn)
+        curr_ver = code.check()
+        print(curr_ver)
+        # code.download(version='10.2.0')
+        #self.content_update()
+        #code.download_install_reboot(version='10.2.7-h20')
+        # once program completes device reboots
+
+    def disable_pan2(self):
+        pan2 = device.SystemSettings(panorama2="1.1.1.1")
+        self.fw_conn.add(pan2)
+        pan2.delete()
+        self.fw_conn.commit()
+
+    def content_update(self):
+        cont = updater.ContentUpdater(self.fw_conn)
+        cont.download_install(version='latest')
+
+    def get_cdi_dhcp(self):
+
+        decom_ip = ["172.17.35.2", "172.17.64.23", "172.16.67.4", "172.16.32.100", "172.16.98.130", "172.17.130.19",
+                    "172.17.226.100", "172.16.147.5", "172.17.176.12", "172.17.160.231", "172.16.4.20", "172.16.115.5",
+                    "172.17.234.100", "172.16.131.14", "172.16.9.219", "172.17.254.2", "172.16.4.21", "172.16.9.220",
+                    "172.16.9.10", "172.16.9.150", "172.16.4.21", "172.17.160.230", "172.16.4.25", "172.16.9.130", "172.16.9.241",
+                    "172.16.4.233", "172.16.4.245", "172.16.4.232", "172.16.4.231"]
+
+        dhcp_info = self.fw_conn.op('show dhcp server settings "all"', xml=True)
+        dict_dhcp = xmltodict.parse(dhcp_info)
+        dhcp_list = dict_dhcp['response']['result']['entry']
+        for entry in dhcp_list:
+            print(f"FW - {self.fw_host}\tInterface: {entry['@name']}")
+            print("********************************************************")
+            print(f"Primary DNS: {entry['dns1']}")
+            print(f"Secondary DNS: {entry['dns2']}")
+            print("********************************************************\n")
+            if entry['dns1'] or entry['dns2'] in decom_ip:
+                print(f"[*] Invalid DNS detected on {self.fw_host} {entry['@name']}")
