@@ -1,0 +1,212 @@
+hostname us{{host.site_id}}sw-core-{{host.switch_num}}
+vdc us{{host.site_id}}sw-core-{{host.switch_num}} id 1
+!
+feature bash-shell
+feature ssh
+feature tacacs+
+cfs distribute
+feature scheduler
+feature pim
+feature interface-vlan
+feature lacp
+feature vpc
+feature lldp
+feature vtp
+clock timezone utc 0 0
+!
+logging level aaa 5
+logging level cdp 6
+logging level interface-vlan 5
+logging level monitor 6
+logging level otm 5
+logging level radius 5
+logging level spanning-tree 6
+logging level tacacs 5
+logging level vpc 6
+banner motd ^
+        __        __               _
+        \ \      / /_ _ _ __ _ __ (_)_ __   __ _
+         \ \ /\ / / _' | '__| '_ \| | '_ \ / _' |
+          \ V  V / (_| | |  | | | | | | | | (_| |
+           \_/\_/ \__,_|_|  |_| |_|_|_| |_|\__, |
+                                           |___/
+
+Unauthorized access to this system is forbidden. Access to
+this system must be authorized and approved by the system
+owner. Access and activities on this system are monitored
+and logged by the system owner. By accessing this system,
+you acknowledge that your actions will be monitored and as
+such can be used in the pursuit and prosecution of criminal
+activities related to this system and or network.
+^
+
+ssh key rsa 2048 force
+no ssh key dsa
+no ssh key ecdsa
+password secure-mode
+ssh login-gracetime 120
+ssh idle-timeout 0 keepalive-count 0
+!
+ip domain-lookup
+ip domain-name infra.chdn.com
+vrf context management
+  ip name-server 172.16.7.250 172.17.0.250
+tacacs-server host 172.16.15.12 key 7 "{{host.tacacs_key}}" timeout 45
+tacacs-server host 172.17.15.13 key 7 "{{host.tacacs_key}}" timeout 45
+aaa group server tacacs+ mgmt
+    server 172.16.15.12
+    server 172.17.15.13
+    source-interface mgmt0
+system default switchport shutdown
+logging event trunk-status default
+service unsupported-transceiver
+errdisable recovery cause link-flap
+errdisable recovery cause bpduguard
+errdisable recovery cause loopback
+errdisable recovery cause storm-control
+errdisable recovery cause security-violation
+errdisable recovery cause psecure-violation
+errdisable recovery cause vpc-peerlink
+errdisable recovery cause failed-port-state
+errdisable recovery cause vlan-membership
+errdisable recovery cause pause-rate-limit
+!
+policy-map type network-qos jumbo
+  class type network-qos class-default
+    mtu 9216
+system qos
+  service-policy type network-qos jumbo
+snmp-server contact cdi_infrastructure@kyderby.com
+snmp-server location {{host.site_id}}-{{host.telecom_space}}-CORE
+snmp-server community ReadOnlyCDI group network-operator
+rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+ntp server 216.184.32.177 prefer use-vrf management
+ntp server 216.184.36.177 use-vrf management
+!
+vlan 1
+vlan 999
+  name blackhole
+!
+spanning-tree pathcost method long
+spanning-tree port type edge bpduguard default
+spanning-tree loopguard default
+spanning-tree vlan 1-3967 priority 8192
+vrf context management
+  ip route 0.0.0.0/0 {{host.mgmt_gw}}
+vrf context vpc-keepalive
+  description VPC Keepalive
+no port-channel load-balance resilient
+system default switchport
+!
+vpc domain 10
+  peer-switch
+  role priority 10
+  peer-keepalive destination {{host.vpc_peer_dest_ip}} source {{host.vpc_peer_src_ip}} vrf vpc-keepalive
+  auto-recovery
+!
+port-profile type ethernet interface_access
+  description Access Interface
+  switchport
+  load-interval counter 1 5
+  load-interval counter 2 30
+  load-interval counter 3 300
+  state enabled
+!
+port-profile type port-channel interface_trunk
+  description Trunk Interface
+  switchport
+  switchport mode trunk
+  switchport trunk native vlan 999
+  load-interval counter 1 5
+  load-interval counter 2 30
+  load-interval counter 3 300
+  state enabled
+!
+port-profile type port-channel mgmt
+  description VPC to MDF Management Switch
+  switchport
+  inherit port-profile interface_trunk
+  switchport trunk allowed vlan 1332,1399
+  state enabled
+ !
+port-profile type ethernet compute
+  description Non-VPC to MDF Compute
+  switchport
+  inherit port-profile interface_trunk
+  switchport trunk allowed vlan 2-4093
+  state enabled
+!
+port-profile type port-channel rubrik
+  description VPC to Rubrik
+  switchport
+  inherit port-profile interface_trunk
+  switchport trunk allowed vlan 1352,1400-1499
+  state enabled
+!
+port-profile type port-channel mdf_core
+  description VPC to Enterprise Firewall_Core Switch
+  switchport
+  inherit port-profile interface_trunk
+  switchport trunk allowed vlan 2-4093
+  state enabled
+!
+ port-profile type port-channel av_agg
+   description VPC to AV Aggregation Switch
+   switchport
+   inherit port-profile interface_trunk
+   switchport trunk allowed vlan 1332, 1390
+   state enabled
+!
+port-profile type port-channel it_access
+  description VPC to IT Access Switch
+  switchport
+  inherit port-profile interface_trunk
+  switchport trunk allowed vlan 2-1324,1326-1389,1391,1393-1398,2100-2129
+  state enabled
+!
+port-profile type port-channel gaming_agg
+  description VPC to Gaming Switch
+  switchport
+  inherit port-profile interface_trunk
+  switchport trunk allowed vlan 1332,1334,2300-2899
+  state enabled
+!
+interface Vlan1
+!
+interface mgmt0
+vrf member management
+ip address {{host.mgmt_ip}}/{{host.mgmt_mask}}
+!
+cli alias name ipb show ip interface brief
+cli alias name ps show port-channel summary
+cli alias name crf copy running-config bootflash:
+cli alias name is show interface status
+cli alias name wr copy running-config startup-config
+line console
+  exec-timeout 10
+line vty
+  session-limit 5
+  exec-timeout 10
+feature signature-verification
+feature analytics
+ip tcp synwait-time 5
+!
+logging logfile messages 3 size 100000
+logging server {{host.logging_srvr}} 4 use-vrf management facility local3
+logging source-interface mgmt0
+logging timestamp milliseconds
+!
+interface Ethernet3/1
+inherit port-profile mgmt
+!
+interface Ethernet3/2
+inherit port-profile mgmt
+!
+end
+copy run start
+
+

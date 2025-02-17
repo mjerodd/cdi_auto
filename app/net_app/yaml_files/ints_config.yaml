@@ -1,0 +1,13 @@
+---
+
+inventory:
+  plugin: SimpleInventory
+  options:
+    host_file: "/home/marv/PycharmProjects/Work_Automation/app/net_app/yaml_files/hosts.yaml"
+    group_file: "/home/marv/PycharmProjects/Work_Automation/app/net_app/yaml_files/groups.yaml"
+    defaults_file: "/home/marv/PycharmProjects/Work_Automation/app/net_app/yaml_files/defaults.yaml"
+
+runner:
+  plugin: threaded
+  options:
+    num_workers: 10

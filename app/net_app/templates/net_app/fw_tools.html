@@ -1,0 +1,28 @@
+{% extends 'net_app/base.html' %}
+
+{% load static %}
+
+    {% block content %}
+
+<div class="container" style="padding: 50px;">
+    <h2 class="text-center">Firewall Tools</h2>
+    <div class="row pt-5">
+        <!-- Import data -->
+        <div class="col-md-4">
+            <a href="{% url 'ini-fw-auto' %}" class="text-decoration-none text-dark">
+                <div class="card alert-primary shadow">
+                    <div class="card-header">
+                    <h4>Initial NGFW Builds</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Initial NGFW Builds</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+
+    {% endblock %}

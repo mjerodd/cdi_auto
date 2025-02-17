@@ -1,0 +1,12 @@
+---
+
+platform: "ios"
+
+data:
+  secrets:
+    password: ""
+    enable: ""
+  vlans:
+    '1390': dcd_av_control
+    '1392': dcd_av_audio
+    '1325': corp_client_audiovisual

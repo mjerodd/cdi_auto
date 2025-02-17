@@ -1,0 +1,98 @@
+{% extends 'net_app/base.html' %}
+
+{% load static %}
+
+    {% block content %}
+
+<div class="container" style="padding: 50px;">
+    <h2 class="text-center">Insert Clever Corp Name Here</h2>
+    <div class="row pt-5">
+        <!-- Import data -->
+        <div class="col-md-4">
+            <a href="{% url 'core-template' %}" class="text-decoration-none text-dark">
+                <div class="card alert-primary shadow">
+                    <div class="card-header">
+                    <h4>Core Builds</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Nexus Core Builds</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Export Data -->
+        <div class="col-md-4">
+            <a href="{% url 'int-descriptions' %}" class="text-decoration-none text-dark">
+                <div class="card alert-success shadow">
+                    <div class="card-header">
+                    <h4>Interface Descriptions</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Automates Interface Descriptions</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Bulk Emails -->
+        <div class="col-md-4">
+            <a href="{% url 'firewall-tools' %}" class="text-decoration-none text-dark">
+                <div class="card alert-danger shadow">
+                    <div class="card-header">
+                    <h4>Firewall Tools</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Palo Alto Automation Tools</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row pt-5">
+        <!-- Email Tracking -->
+        <div class="col-md-4">
+            <a href="{% url 'ios-upgrade' %}" class="text-decoration-none text-dark">
+                <div class="card alert-warning shadow">
+                    <div class="card-header">
+                    <h4>Switch IOS Upgrade</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Perform Switch IOS Upgrades</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+     <!-- Compress Images -->
+        <div class="col-md-4">
+            <a href="#" class="text-decoration-none text-dark">
+                <div class="card alert-danger shadow">
+                    <div class="card-header">
+                    <h4>Compress Images</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Compresses Image files and reduces the size</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+     <!-- Web Scraping -->
+        <div class="col-md-4">
+            <a href="{% url 'finance.stocks' %" class="text-decoration-none text-dark">
+                <div class="card alert-warning shadow">
+                    <div class="card-header">
+                    <h4>Finance</h4>
+                    </div>
+                    <div class="card-body">
+                    <p class="card-text">Scrapes websites for useful information</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+
+    {% endblock %}

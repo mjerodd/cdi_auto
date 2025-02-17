@@ -1,0 +1,12 @@
+---
+
+
+STAGING-ROUTER:
+  hostname: "192.168.1.25"
+  groups:
+    - lab_group
+  data:
+
+    fw_sub: "10.32.112.40"
+    fw_sub_gw: "10.32.112.46"
+

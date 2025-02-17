@@ -1,0 +1,21 @@
+{% extends 'net_app/base.html' %}
+
+{% block content %}
+
+<div class="container">
+    <h1>IOS Upgrade Tool</h1>
+    <div class="row justify-content-md-right">
+<form action="" method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="{% if field.errors %}errors{% endif %}" >
+    {{ field.label_tag }}
+        {{ field }}
+        {{ field.errors }}
+        </div>
+    {% endfor %}
+    <button class="btn btn-outline-dark btn-lg" type="submit">Upgrade</button>
+</form>
+        </div>
+</div>
+{% endblock %}

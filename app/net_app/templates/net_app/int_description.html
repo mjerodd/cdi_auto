@@ -1,0 +1,15 @@
+{% extends 'net_app/base.html' %}
+
+{% block body %}
+
+<div class="container">
+    <h1>Interface Description Tool</h1>
+    <div class="row justify-content-md-right">
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Deploy</button>
+</form>
+        </div>
+</div>
+{% endblock %}
