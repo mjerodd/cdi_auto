@@ -17,4 +17,9 @@ class IosUpgradeForm(forms.Form):
 
 class PaloForm(forms.Form):
     firewall_ip = forms.GenericIPAddressField(label="Firewall IP")
-    wan_ip = forms.CharField(max_length='30')
+    wan_ip = forms.CharField(max_length=30)
+
+
+class PaloOsUpgradeForm(forms.Form):
+    firewall_ip = forms.CharField(label="Enter each IP to be upgraded", widget=forms.Textarea)
+    version = forms.CharField(max_length=20, label="Code Version")

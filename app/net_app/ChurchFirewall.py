@@ -3,8 +3,10 @@ import xmltodict
 from pprint import pprint
 import subprocess, os, time
 import requests
+from environ import Env
 
-
+env = Env()
+Env.read_env()
 
 
 class ChurchFirewall:
@@ -17,8 +19,8 @@ class ChurchFirewall:
              ]
 
     def __init__(self, firewall_ip):
-        self.api_user = "admin"
-        self.api_password = "HBC_Derby"
+        self.api_user = env("API_USER")
+        self.api_password = env("API_PASSWORD")
         self.fw_host = firewall_ip
         self.fw_conn = firewall.Firewall(hostname=self.fw_host, api_username=self.api_user,
                                          api_password=self.api_password)
@@ -204,13 +206,9 @@ class ChurchFirewall:
 
         self.fw_conn.commit()
 
-    def os_update(self):
+    def os_update(self, version):
         code = updater.SoftwareUpdater(self.fw_conn)
-        curr_ver = code.check()
-        print(curr_ver)
-        # code.download(version='10.2.0')
-        #self.content_update()
-        #code.download_install_reboot(version='10.2.7-h20')
+        code.download_install_reboot(version=version)
         # once program completes device reboots
 
     def disable_pan2(self):

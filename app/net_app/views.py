@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .forms import CoreTempForm, IntDescriptionForm, IosUpgradeForm, PaloForm
+from .forms import CoreTempForm, IntDescriptionForm, IosUpgradeForm, PaloForm, PaloOsUpgradeForm
 from nornir import InitNornir
 from nornir_netmiko.tasks import netmiko_send_config, netmiko_send_command, netmiko_file_transfer
 from nornir_utils.plugins.functions import print_result
@@ -190,6 +190,36 @@ def ini_fw_auto(request):
         form = PaloForm()
         context = {'form': form}
     return render(request, "net_app/firewall_auto.html", context=context)
+
+
+def fw_os_auto(request):
+    if request.method == 'POST':
+        form = PaloOsUpgradeForm(request.POST)
+
+        if form.is_valid():
+            print("valid")
+            print(form.cleaned_data)
+            fw_ver = form.cleaned_data['version']
+            #try:
+            target = list(form.cleaned_data.values())[0]
+            print(target)
+            target_list = target.split(',')
+            print(target_list)
+
+            for fw in target_list:
+                print(fw)
+                cf = ChurchFirewall(fw)
+                cf.os_update(fw_ver)
+
+            #except Exception as e:
+            #   print("Error: ", e)
+
+            return redirect('index')
+    else:
+        form = PaloOsUpgradeForm()
+        context = {'form': form}
+    return render(request, "net_app/firewall_auto.html", context=context)
+
 
 def fw_tools(request):
     return render(request, "net_app/fw_tools.html")
